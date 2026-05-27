@@ -1,0 +1,50 @@
+name: LibreCR
+options:
+  bundleIdPrefix: org.librecr
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    CODE_SIGN_STYLE: Automatic
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+packages:
+  LibreCRKit:
+    path: ../..
+targets:
+  LibreCR:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+        excludes:
+          - "Info.plist"
+          - "Resources/**"
+      - path: Sources/Resources/phone_cert_162b.bin
+        buildPhase: resources
+      - path: Sources/Resources/phone_cert_firstpair.bin
+        buildPhase: resources
+        buildPhase: resources
+    dependencies:
+      - package: LibreCRKit
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: LibreCR
+        CFBundleIdentifier: org.librecr.LibreCR
+        UILaunchScreen: {}
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSBluetoothAlwaysUsageDescription: "LibreCR needs Bluetooth to pair with and read your Libre 3 sensor."
+        NFCReaderUsageDescription: "LibreCR uses NFC to scan and activate Libre 3 sensors."
+        UIBackgroundModes:
+          - bluetooth-central
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: Sources/LibreCR.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: org.librecr.LibreCR
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Sources/Info.plist

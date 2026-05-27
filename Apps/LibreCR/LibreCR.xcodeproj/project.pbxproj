@@ -1,0 +1,373 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1D899A72CBA53C2AA317633B /* NFCActivationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512139437EBCCEDBDA24DD7B /* NFCActivationView.swift */; };
+		21D9B7F9CC249CCECE8E39AB /* LibreCRApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 419701AA98D56341F21DC529 /* LibreCRApp.swift */; };
+		4248D8024D0B1991CF78954B /* phone_cert_firstpair.bin in Resources */ = {isa = PBXBuildFile; fileRef = C9DE0A44ECD815B75762DE8A /* phone_cert_firstpair.bin */; };
+		7C68AF374991FA1AB31CC504 /* LibreCRKit in Frameworks */ = {isa = PBXBuildFile; productRef = F3DB846991FC83E9060BF6DB /* LibreCRKit */; };
+		89EE88330AE0E54240AE9BF9 /* phone_cert_162b.bin in Resources */ = {isa = PBXBuildFile; fileRef = 8907CB25A04F343FEC6A9BDE /* phone_cert_162b.bin */; };
+		E2D3A5CE3A828FF8B42E4591 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F9AA571585C0F20C77D9A3 /* ContentView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		14F9AA571585C0F20C77D9A3 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1D0C4DF8481B19873B003C47 /* LibreCRKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LibreCRKit; path = ../..; sourceTree = SOURCE_ROOT; };
+		419701AA98D56341F21DC529 /* LibreCRApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibreCRApp.swift; sourceTree = "<group>"; };
+		512139437EBCCEDBDA24DD7B /* NFCActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCActivationView.swift; sourceTree = "<group>"; };
+		5ECDEC1BAF152A62F6A454A1 /* LibreCR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LibreCR.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8907CB25A04F343FEC6A9BDE /* phone_cert_162b.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = phone_cert_162b.bin; sourceTree = "<group>"; };
+		C9DE0A44ECD815B75762DE8A /* phone_cert_firstpair.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = phone_cert_firstpair.bin; sourceTree = "<group>"; };
+		F41D8AB9C46C374B0315B155 /* LibreCR.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LibreCR.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3647DEA466595D8665AFCD9A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7C68AF374991FA1AB31CC504 /* LibreCRKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5D2713D143393D682AC862FD /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				1D0C4DF8481B19873B003C47 /* LibreCRKit */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		5D4FB7A464F368DA16E9DB53 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				14F9AA571585C0F20C77D9A3 /* ContentView.swift */,
+				F41D8AB9C46C374B0315B155 /* LibreCR.entitlements */,
+				419701AA98D56341F21DC529 /* LibreCRApp.swift */,
+				512139437EBCCEDBDA24DD7B /* NFCActivationView.swift */,
+				6356F8599FA6FB070BA49E38 /* Resources */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		6356F8599FA6FB070BA49E38 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				8907CB25A04F343FEC6A9BDE /* phone_cert_162b.bin */,
+				C9DE0A44ECD815B75762DE8A /* phone_cert_firstpair.bin */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		6B191F59F3ACFF7A0A713603 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5ECDEC1BAF152A62F6A454A1 /* LibreCR.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9A30AD2861BFCDD909A5365E = {
+			isa = PBXGroup;
+			children = (
+				5D2713D143393D682AC862FD /* Packages */,
+				5D4FB7A464F368DA16E9DB53 /* Sources */,
+				6B191F59F3ACFF7A0A713603 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2C9E28E5281BC604E7B71500 /* LibreCR */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B49A3DD122D17C20F1CE1763 /* Build configuration list for PBXNativeTarget "LibreCR" */;
+			buildPhases = (
+				99C60A27EF065021F02A23CA /* Sources */,
+				A82A62C95CA16A819C430329 /* Resources */,
+				3647DEA466595D8665AFCD9A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LibreCR;
+			packageProductDependencies = (
+				F3DB846991FC83E9060BF6DB /* LibreCRKit */,
+			);
+			productName = LibreCR;
+			productReference = 5ECDEC1BAF152A62F6A454A1 /* LibreCR.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B7E5641EEEA2D05617AAAB79 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					2C9E28E5281BC604E7B71500 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = DFA2275D3B920B932704A5F3 /* Build configuration list for PBXProject "LibreCR" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9A30AD2861BFCDD909A5365E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8F7D122139AFA6C5BDBA72CF /* XCLocalSwiftPackageReference "../.." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 6B191F59F3ACFF7A0A713603 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2C9E28E5281BC604E7B71500 /* LibreCR */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A82A62C95CA16A819C430329 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				89EE88330AE0E54240AE9BF9 /* phone_cert_162b.bin in Resources */,
+				4248D8024D0B1991CF78954B /* phone_cert_firstpair.bin in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		99C60A27EF065021F02A23CA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2D3A5CE3A828FF8B42E4591 /* ContentView.swift in Sources */,
+				21D9B7F9CC249CCECE8E39AB /* LibreCRApp.swift in Sources */,
+				1D899A72CBA53C2AA317633B /* NFCActivationView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		03B271AC1685E8FFA1F26220 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		0C4A92BFBF6B2B2A90037CDF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/LibreCR.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.librecr.LibreCR;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B8981E3363EBED9AB94606B8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/LibreCR.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.librecr.LibreCR;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C999A4CFC03650FCFD58E571 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B49A3DD122D17C20F1CE1763 /* Build configuration list for PBXNativeTarget "LibreCR" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B8981E3363EBED9AB94606B8 /* Debug */,
+				0C4A92BFBF6B2B2A90037CDF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DFA2275D3B920B932704A5F3 /* Build configuration list for PBXProject "LibreCR" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C999A4CFC03650FCFD58E571 /* Debug */,
+				03B271AC1685E8FFA1F26220 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		8F7D122139AFA6C5BDBA72CF /* XCLocalSwiftPackageReference "../.." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F3DB846991FC83E9060BF6DB /* LibreCRKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LibreCRKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B7E5641EEEA2D05617AAAB79 /* Project object */;
+}
