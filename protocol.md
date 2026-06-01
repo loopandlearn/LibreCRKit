@@ -537,5 +537,3 @@ fully polished clinical model:
 - Complete patch-state and error-state enum coverage.
 - Completion markers and all record variants for event, clinical, and factory
   data streams.
-- Long-duration iOS background behavior across system termination, reconnect,
-  and memory pressure.

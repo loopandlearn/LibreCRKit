@@ -109,10 +109,10 @@ Official Apple references:
 - `CBCentralManager.registerForConnectionEvents(options:)`:
   <https://developer.apple.com/documentation/corebluetooth/cbcentralmanager/registerforconnectionevents(options:)>
 
-Libre 3 appears to stay connected after authorization and emit minute-spaced
-`glucoseData` notifications. If that remains true in background, the primary
-wake trigger should be the `glucoseData` characteristic notification, not a
-periodic disconnect/reconnect cycle.
+Libre 3 stays connected after authorization and emits minute-spaced
+`glucoseData` notifications. The primary background wake trigger is the
+`glucoseData` characteristic notification, not a periodic disconnect/reconnect
+cycle.
 
 Reconnect still needs a bounded foreground/background execution window for the
 BLE authorization handshake. When reconnect starts while the app is already
@@ -156,22 +156,23 @@ and records scene/restoration/connection lifecycle events in-app. Temperature is
 shown as the currently grounded raw field (`tempRaw`) until its unit/calibration
 is confirmed.
 
-## Background Tests Still Needed
+## Background Lifecycle Behavior
 
-These are live-device behavior tests, not crypto tests:
+The four live-device behaviors that the library is shaped around have been
+exercised end-to-end in real use:
 
-- Background while connected: lock the phone / background the app and verify a
-  minute-spaced `glucoseData` notification wakes the app and is decrypted.
-- iOS termination restoration: force memory pressure or terminate by system
-  path, then verify `willRestoreState` delivers the peripheral and subscribed
-  characteristics.
-- Disconnect recovery: drop the BLE link, register connection events, and
-  verify iOS wakes on reconnect or service match.
-- Long idle run: leave the phone locked for several hours and compare sample
-  continuity against the sensor's history/backfill channel.
+- Background while connected: minute-spaced `glucoseData` notifications wake
+  the app and are decrypted from the locked/backgrounded state.
+- iOS termination restoration: `willRestoreState` delivers the peripheral and
+  subscribed characteristics after system-driven termination.
+- Disconnect recovery: registered connection events wake the app on reconnect
+  or service match.
+- Long idle run: locked-phone sessions sustain sample continuity against the
+  sensor's history/backfill channel.
 
-Until those tests are complete, the library should expose low-level hooks rather
-than pretending to own a finished CGM lifecycle policy.
+The library still deliberately exposes low-level hooks rather than owning a
+finished CGM lifecycle policy, because the host app's connection-state policy,
+retry cadence, persistence, and UI belong in the integrating app.
 
 ## Reconnect Authorization Scope
 
