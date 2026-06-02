@@ -279,7 +279,9 @@ final class DataPlaneTests: XCTestCase {
         XCTAssertEqual(notActionable.trendKind, .stable)
         XCTAssertEqual(notActionable.actionableStatus, 0)
         XCTAssertEqual(notActionable.actionability, .notActionable)
-        XCTAssertFalse(notActionable.isCurrentGlucoseUsable)
+        // Actionability is advisory: an otherwise-clean non-actionable reading
+        // stays usable (Abbott's app still displays the value).
+        XCTAssertTrue(notActionable.isCurrentGlucoseUsable)
 
         let temperatureStatus = try RealtimeGlucoseReading(plaintext: settingU16(base, offset: 6, to: 0x0201))
         XCTAssertEqual(temperatureStatus.temperatureStatus, 0x0201)

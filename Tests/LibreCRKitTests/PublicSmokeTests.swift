@@ -225,7 +225,7 @@ final class PublicSmokeTests: XCTestCase {
         XCTAssertFalse(assessment.isUsable)
     }
 
-    func testNotActionableStatusBlocksQualityAssessment() throws {
+    func testNotActionableStatusIsAdvisoryAndDoesNotBlock() throws {
         var plaintext = usableRealtimePlaintext
         plaintext[14] = 0x03
 
@@ -233,8 +233,13 @@ final class PublicSmokeTests: XCTestCase {
         let assessment = reading.currentGlucoseQualityAssessment
 
         XCTAssertEqual(reading.actionability, .notActionable)
+        // The issue is surfaced for visibility but classified as advisory, so it
+        // does not suppress an otherwise-clean reading.
         XCTAssertEqual(assessment.issues, [.notActionable(.notActionable)])
-        XCTAssertFalse(assessment.isUsable)
+        XCTAssertEqual(assessment.advisories, [.notActionable(.notActionable)])
+        XCTAssertTrue(assessment.blockingIssues.isEmpty)
+        XCTAssertTrue(assessment.isUsable)
+        XCTAssertTrue(reading.isCurrentGlucoseUsable)
     }
 
     func testUnavailableCurrentGlucoseBlocksQualityAssessment() throws {

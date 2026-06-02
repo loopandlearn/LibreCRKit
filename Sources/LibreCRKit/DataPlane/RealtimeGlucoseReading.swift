@@ -66,7 +66,7 @@ public struct RealtimeGlucoseReading: Equatable, Sendable {
     }
 
     public var isCurrentGlucoseUsable: Bool {
-        isCurrentGlucoseValid && isCurrentDQGood && actionability == .actionable
+        isCurrentGlucoseValid && isCurrentDQGood
     }
 
     public var currentGlucoseQualityAssessment: Libre3GlucoseQualityAssessment {
@@ -104,7 +104,7 @@ public struct RealtimeGlucoseReading: Equatable, Sendable {
         }
 
         return Libre3GlucoseQualityAssessment(
-            isUsable: issues.isEmpty,
+            isUsable: !issues.contains { $0.isUsabilityBlocking },
             issues: issues,
             evidence: qualityEvidence
         )
@@ -617,6 +617,27 @@ public enum Libre3GlucoseQualityIssue: Equatable, Sendable, CustomStringConverti
     case sensorCondition(Libre3SensorCondition)
     case notActionable(Libre3ActionableStatus)
 
+    /// Whether this issue makes the reading unusable for dosing/display.
+    ///
+    /// `.notActionable` is advisory only: Abbott's own app still displays the
+    /// glucose number for a non-actionable reading (the bit only optionally
+    /// drives the `nonactionable_icon` overlay, gated by `EnableNonActionableIcon`).
+    /// It is surfaced as a quality issue so callers can see it, but it does not
+    /// suppress the reading.
+    public var isAdvisory: Bool {
+        switch self {
+        case .notActionable:
+            return true
+        case .sensorWarmup, .sensorExpired, .currentGlucoseUnavailable,
+             .currentDataQuality, .sensorCondition:
+            return false
+        }
+    }
+
+    public var isUsabilityBlocking: Bool {
+        !isAdvisory
+    }
+
     public var description: String {
         switch self {
         case .sensorWarmup(let remainingMinutes):
@@ -639,6 +660,17 @@ public struct Libre3GlucoseQualityAssessment: Equatable, Sendable {
     public let isUsable: Bool
     public let issues: [Libre3GlucoseQualityIssue]
     public let evidence: RealtimeGlucoseQualityEvidence
+
+    /// Issues that suppress the reading (warmup, expiry, DQ error, etc.).
+    public var blockingIssues: [Libre3GlucoseQualityIssue] {
+        issues.filter { $0.isUsabilityBlocking }
+    }
+
+    /// Issues surfaced for visibility but that do not suppress the reading
+    /// (currently only `.notActionable`).
+    public var advisories: [Libre3GlucoseQualityIssue] {
+        issues.filter { $0.isAdvisory }
+    }
 }
 
 public struct RealtimeGlucoseQualityEvidence: Equatable, Sendable {
