@@ -303,12 +303,39 @@ final class DataPlaneTests: XCTestCase {
         XCTAssertEqual(status.appDisconnectReason, 0)
         XCTAssertFalse(status.hasErrorData)
         XCTAssertTrue(status.hasDisconnectReason)
+        XCTAssertEqual(status.sensorError, .none)
+        XCTAssertFalse(status.isTerminalFailure)
 
         let lifecycle = status.lifecycle(wearDurationMinutes: 20160)
         XCTAssertEqual(lifecycle.phase, .active)
         XCTAssertTrue(lifecycle.isWarmupComplete)
         XCTAssertFalse(lifecycle.isExpired)
         XCTAssertEqual(lifecycle.remainingWearMinutes, 5596)
+    }
+
+    func testPatchStatusDecodesSensorErrorCodes() throws {
+        // Synthetic frames: the healthy live frame with only the errorData
+        // word (offset 2-3, LE) swapped. Codes per Abbott SensorState.from.
+        func status(errorWord hex: String) throws -> PatchStatus {
+            try PatchStatus(plaintext: raw("9d28" + hex + "e0000704e4381300"))
+        }
+
+        XCTAssertEqual(try status(errorWord: "0000").sensorError, .none)
+        XCTAssertEqual(try status(errorWord: "0300").sensorError, .insertionFailure)
+        XCTAssertEqual(try status(errorWord: "0500").sensorError, .expired)
+        XCTAssertEqual(try status(errorWord: "0600").sensorError, .terminated)
+        XCTAssertEqual(try status(errorWord: "0700").sensorError, .transmissionError)
+        XCTAssertEqual(try status(errorWord: "0800").sensorError, .terminated)
+        XCTAssertEqual(try status(errorWord: "0900").sensorError, .unknown(9))
+
+        // Terminal failures (replace sensor) vs. normal expiry / transient.
+        XCTAssertTrue(try status(errorWord: "0300").isTerminalFailure)
+        XCTAssertTrue(try status(errorWord: "0600").isTerminalFailure)
+        XCTAssertTrue(try status(errorWord: "0800").isTerminalFailure)
+        XCTAssertFalse(try status(errorWord: "0000").isTerminalFailure)
+        XCTAssertFalse(try status(errorWord: "0500").isTerminalFailure)
+        XCTAssertFalse(try status(errorWord: "0700").isTerminalFailure)
+        XCTAssertFalse(try status(errorWord: "0900").isTerminalFailure)
     }
 
     func testLifecycleTakesWarmupAndWearFromPatchInfo() throws {

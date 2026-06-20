@@ -348,6 +348,28 @@ Known patch state:
 | --- | --- |
 | `4` | Active |
 
+The `errorData` field carries the sensor error/condition code. The patch-status
+record shares the `lifeCount` / `errorData` / `eventData` / `index` shape of the
+sensor's event-log record, and `errorData` is the error field of that record.
+The numeric meaning is **inferred** from Abbott's app
+(`SensorState.Companion.from`), which maps an error code to a `SensorError`:
+
+| `errorData` | Meaning | Terminal? |
+| --- | --- | --- |
+| `0` | No error | No |
+| `3` | Insertion failure (sensor failed to start) | Yes |
+| `5` | Expired (normal end-of-wear) | No |
+| `6` | Terminated (unrecoverable failure) | Yes |
+| `7` | Transmission error | No |
+| `8` | Terminated (unrecoverable failure) | Yes |
+
+This is a terminal *failure* state — the sensor has decided its quality is
+unrecoverably impaired — distinct from normal `5`/end-of-wear expiry and from
+the per-reading sensor-condition bits in the realtime glucose word. The mapping
+has not yet been confirmed against a captured terminal-failure frame; healthy
+captures consistently show `errorData == 0`. LibreCRKit exposes the decode as
+`PatchStatus.sensorError` (`Libre3SensorError`) and `PatchStatus.isTerminalFailure`.
+
 Lifecycle helpers currently model a 60-minute warmup and optional total wear
 duration supplied by the app.
 
