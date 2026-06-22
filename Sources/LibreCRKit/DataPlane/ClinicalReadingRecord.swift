@@ -36,13 +36,15 @@ import Foundation
 /// forward at `lifeCount ≡ 2 (mod 5)` and lands on the boundary
 /// `lifeCount − 17` (snapped down to a multiple of 5). Empirically
 /// confirmed across multiple captures; e.g. `lifeCount 2017` finalized
-/// the boundary at 2000, `2022` at 2005, `2027` at 2010, etc. The ~17
-/// minute lag is the firmware's historic-finalization latency. It has
-/// not been proven firmware-constant across all sensors/conditions, so
-/// authoritative pairing of `historicGlucoseRaw` to a lifeCount should
-/// prefer the realtime frame's own `historicalLifeCount` field when
-/// available; the helper below is provided for cases where only the
-/// clinical record is in hand.
+/// the boundary at 2000, `2022` at 2005, `2027` at 2010, etc. The 17
+/// minute lag is the firmware's historic-finalization latency and is a
+/// named constant in Abbott's app —
+/// `MSLibre3Constants.HISTORIC_POINT_LATENCY = 17` (paired with
+/// `LIBRE3_HISTORIC_LIFECOUNT_INTERVAL = 5`) — so it is a fixed protocol
+/// parameter, not just a capture-fit. Even so, authoritative pairing of
+/// `historicGlucoseRaw` to a lifeCount should prefer the realtime frame's
+/// own `historicalLifeCount` field when available; the helper below is
+/// provided for cases where only the clinical record is in hand.
 ///
 /// **Gap-fill behavior — the headline practical use:** the clinical
 /// CCCD buffers records sensor-side while the host is disconnected and
@@ -122,8 +124,10 @@ public struct ClinicalReadingRecord: Equatable, Sendable {
     }
 
     /// Best-effort estimate of the `lifeCount` that `historicGlucoseRaw`
-    /// represents, derived from the empirical "snap to last 5-min
-    /// boundary at `lifeCount − 17`" model. Returns `nil` when the
+    /// represents: snap to the last 5-min boundary at `lifeCount − 17`.
+    /// The 17-count offset is Abbott's `HISTORIC_POINT_LATENCY` and the
+    /// 5-count snap is `LIBRE3_HISTORIC_LIFECOUNT_INTERVAL`, both fixed
+    /// constants in `MSLibre3Constants`. Returns `nil` when the
     /// arithmetic underflows (e.g. very early in sensor life). Prefer
     /// the realtime frame's own `historicalLifeCount` field when you
     /// have both records in hand — that's authoritative; this helper
