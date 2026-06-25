@@ -2,8 +2,7 @@
 
 This document summarizes the Libre 3 NFC, BLE, authorization, and data-plane
 behavior modeled by LibreCRKit. It intentionally focuses on protocol structure
-and integration knowledge, not on the reverse-engineering process used to learn
-it.
+and integration knowledge.
 
 The names here are library-facing names. Some fields are still labeled as raw
 or provisional where their clinical meaning is not fully grounded.
@@ -210,6 +209,26 @@ The modeled full command sequence is:
 | 7 | `0x11` StartAuthorization | Prefix `0x08` ChallengeLoadDone | Sensor notifies R1 challenge |
 | 8 | `0x08` SendChallengeLoadDone | Prefix `0x08` PatchChallengeLoadDone | Sensor notifies Phase 6 |
 
+### First-Pair Certificate And Phase 5 Source
+
+Initial (fresh) pairing has two extra constraints beyond the command sequence
+above, both confirmed against live sensors:
+
+- **Certificate family.** The phone certificate must be the `03 03` family
+  (`phone_cert_162b.bin`). The `03 00` candidate (`phone_cert_firstpair.bin`,
+  the LibreCRKit-bundled default) is rejected by live fresh sensors and is kept
+  only for tests. The `03 03` prefix selects the index-1 native static-scalar
+  window for Phase 5.
+- **Native-ephemeral coupling.** The phone ephemeral public key and the Phase 5
+  key source must derive from the same native entropy. Generate them together
+  with `SessionKey.makeFirstPairNativeEphemeral(entropySource:)`, pass the
+  returned keypair as the flow's `phoneEph`, and feed the returned entropy back
+  into `PairingFlow.runCommandGatedFirstPairHandshake(...)`. A random ephemeral
+  does not reach a verified Phase 6.
+
+This is the path used by shipping integrations for live first-pair; cached
+reconnect (below) does not send a certificate or ephemeral at all.
+
 ### Cached Direct Reconnect
 
 Pristine post-pairing reconnect captures also show a shorter cached/direct path
@@ -342,36 +361,62 @@ known descriptors and accept the first one that validates.
 | 10 | 1 | Stack disconnect reason |
 | 11 | 1 | App disconnect reason |
 
+The disconnect-reason bytes are diagnostic signal/reconnect evidence. They do
+not by themselves indicate sensor shutdown, and LibreCRKit keeps them separate
+from patch-state and `errorData` terminal-state decoding.
+
 Known patch state:
 
-| Value | Meaning |
+| Value | Meaning / handling |
 | --- | --- |
+| `3` | Expired/error handling state; clients may request backfill before shutdown |
 | `4` | Active |
+| `5` | Expired/error handling state; distinct from the terminated state |
+| `6` | Terminated / shut down |
+| `7` | Expired/error handling state |
+| `8` | Terminated / shut down |
+
+LibreCRKit names only state `4` as `.active` and exposes other patch-state
+values raw. Convenience helpers group states `3`, `5`, and `7` as
+expired/error handling states, and states `6` and `8` as already terminated.
+Integrations should keep unknown patch-state values visible in logs rather than
+coercing them into a terminal state.
 
 The `errorData` field carries the sensor error/condition code. The patch-status
 record shares the `lifeCount` / `errorData` / `eventData` / `index` shape of the
 sensor's event-log record, and `errorData` is the error field of that record.
-The numeric meaning is **inferred** from Abbott's app
-(`SensorState.Companion.from`), which maps an error code to a `SensorError`:
+Current compatibility mapping for `errorData`:
 
 | `errorData` | Meaning | BLE advertising / session note |
 | --- | --- | --- |
 | `0` | No error | Active/normal |
-| `3` | Insertion failure (sensor failed to start) | Replacement condition |
-| `5` | Expired (normal end-of-wear) | Can still advertise over BLE after wear duration |
-| `6` | Terminated / shut down | Stops advertising after shutdown |
-| `7` | Transmission error | Not an end state |
-| `8` | Terminated / shut down | Stops advertising after shutdown |
+| `3` | Insertion failure (sensor failed to start) | Check-sensor / replacement condition |
+| `5` | Expired (normal end-of-wear) | Sensor-ended notification; can still advertise over BLE after wear duration |
+| `6` | Terminated / shut down | Sensor-ended/terminated condition; stops advertising after shutdown |
+| `7` | Transmission error vocabulary, but replace-sensor UI handling | Replace-sensor notification condition in observed Android app response |
+| `8` | Terminated / shut down | Replace-sensor / termination condition; stops advertising after shutdown |
 
-`5` and `6` are distinct states. State `5` is the normal end-of-wear condition
+`5` and `6` are distinct states. Code `5` is the normal end-of-wear condition
 at the end of `wearDuration`; Libre 3 sensors can still advertise over BLE after
-that transition. State `6` is the terminated/shutdown condition observed after
-the app sends the shutdown patch command (`05 00 00 00 00 00 00`) or after the
-sensor shuts itself down. The mapping has not yet been confirmed against our own
-captured expired/terminated frames; healthy captures consistently show
-`errorData == 0`. LibreCRKit exposes the decode as `PatchStatus.sensorError`
-(`Libre3SensorError`) plus `PatchStatus.isShutdownTerminated` and
-`PatchStatus.isInsertionFailure` convenience flags.
+that transition. Codes `6` and `8` are terminated/shutdown conditions. The
+matching patch-control shutdown command is `05 00 00 00 00 00 00`, and that
+command is reachable from the app's shutdown/end-session handling. However,
+the live ordering of any outbound shutdown write versus the sensor's own
+terminate has not been captured, so integrations should not assume that every
+physical failure or removal trigger is preceded by an outbound shutdown write. LibreCRKit exposes the decode as
+`PatchStatus.sensorError` (`Libre3SensorError`) plus
+`PatchStatus.isShutdownTerminated` and `PatchStatus.isInsertionFailure`
+convenience flags.
+
+For product notifications, LibreCRKit also exposes
+`PatchStatus.sensorAttention` and `PatchStatus.shouldNotifyReplaceSensor`.
+This keeps the raw protocol code visible while matching the current Abbott-app
+response layer: `3 -> checkSensor`, `5/6 -> sensorEnded`, and
+`7/8 -> replaceSensor`. When `errorData == 0`, patch-state fallback treats
+state `3` as check-sensor, states `5`/`6` as sensor-ended, and states `7`/`8`
+as replace-sensor. The recovered Android alarm alert record does not expose the
+underlying Abbott `replaceSensorError` bit directly, so this mapping is the
+stable LibreCRKit surface for prompt client notifications.
 
 Lifecycle helpers currently model a 60-minute warmup and optional total wear
 duration supplied by the app.
@@ -448,7 +493,7 @@ Current usability rule in LibreCRKit:
 current glucose is displayable
 AND current data-quality status is good
 AND sensor condition is OK
-AND actionability is actionable
+AND no lifecycle block such as warmup or expiry is active
 ```
 
 When a `SensorLifecycle` is available, the framework's high-level quality
@@ -458,8 +503,8 @@ from lifecycle timing, typically the `patchStatus.currentLifeCount` field and a
 60-minute default warmup window.
 
 `RealtimeGlucoseReading.currentGlucoseQualityAssessment(lifecycle:)` returns a
-structured `Libre3GlucoseQualityAssessment` with `isUsable`, raw evidence, and
-one or more blocking issues:
+structured `Libre3GlucoseQualityAssessment` with `isUsable`, raw evidence, one
+or more blocking issues, and advisory issues:
 
 | Issue | Meaning |
 | --- | --- |
@@ -468,12 +513,15 @@ one or more blocking issues:
 | `currentGlucoseUnavailable` | Raw current glucose is outside displayable handling |
 | `currentDataQuality` | Packed current word has a non-good data-quality state |
 | `sensorCondition` | Packed current word reports a non-OK sensor condition |
-| `notActionable` | Trend/status byte says current glucose is not actionable |
+| `notActionable` | Advisory: trend/status byte says current glucose is not actionable |
 
 The non-good data-quality and sensor-condition values are deliberately exposed
 as raw/provisional enums where their precise clinical labels are not yet
-grounded. Apps should treat any issue in this list as blocking for automated
-use unless they have stronger product-specific evidence.
+grounded. Apps should treat blocking issues as suppressing automated use unless
+they have stronger product-specific evidence. Actionability is advisory in
+LibreCRKit: an otherwise clean non-actionable reading remains usable, while the
+`notActionable` issue is exposed through `advisories` for callers that want a
+stricter policy.
 
 Apps that process decoded data-plane packets can use `Libre3DataPlaneState` to
 remember the latest `patchStatus` lifecycle and apply it automatically to each
@@ -507,6 +555,13 @@ Known command builders:
 | Event log from index | `04 index 00 00 00 00 00` |
 | Factory data | `06 00 00 00 00 00 00` |
 | Shutdown patch | `05 00 00 00 00 00 00` |
+
+Known client builders encode shutdown as command byte `0x05` with six zero
+payload bytes. That identifies the terminal command format; it does not imply
+that every terminal status was caused by an outbound write.
+
+The shutdown command is terminal session control. It is not part of routine
+disconnect, reconnect, or bounded backfill.
 
 Historical reading pages are 14-byte plaintext records:
 
@@ -559,6 +614,9 @@ fully polished clinical model:
 - Exact clinical semantics for every non-zero data-quality and sensor-condition
   value.
 - Units/calibration for temperature and temperature-status fields.
-- Complete patch-state and error-state enum coverage.
+- Complete patch-state and error-state enum coverage, especially for uncommon
+  physical failure and removal scenarios.
+- Live ordering between patch-status failure states, optional backfill, shutdown
+  patch-control writes, patch-control responses, and BLE disconnect.
 - Completion markers and all record variants for event, clinical, and factory
   data streams.

@@ -18,6 +18,18 @@ public struct PatchStatus: Equatable, Sendable {
         Libre3PatchState(rawValue: patchState)
     }
 
+    public var isPatchStateActive: Bool {
+        patchStateKind.isActive
+    }
+
+    public var isPatchStateExpiredOrError: Bool {
+        patchStateKind.isExpiredOrError
+    }
+
+    public var isPatchStateTerminated: Bool {
+        patchStateKind.isTerminated
+    }
+
     public var hasErrorData: Bool {
         errorData != 0
     }
@@ -31,14 +43,37 @@ public struct PatchStatus: Equatable, Sendable {
         Libre3SensorError(code: errorData)
     }
 
+    /// User-facing attention/action inferred from `errorData`, with
+    /// patch-state fallback when no error code is present.
+    ///
+    /// This is intended for app notification routing. The raw fields remain
+    /// authoritative for logging and for future compatibility: Abbott's
+    /// Android app has overlapping "sensor ended", "replace sensor", and
+    /// "check sensor" response layers, and the exact native alarm-engine
+    /// `replaceSensorError` producer is not public. Current compatibility
+    /// evidence maps error code 7 to the replace-sensor alarm flag and code 8
+    /// to immediate replacement/termination.
+    public var sensorAttention: Libre3SensorAttention {
+        Libre3SensorAttention(errorData: errorData, patchState: patchState)
+    }
+
+    /// `true` when clients should show a prompt/notification about this
+    /// sensor condition as soon as practical.
+    public var shouldNotifyUser: Bool {
+        sensorAttention.shouldNotifyUser
+    }
+
+    /// `true` for conditions that match Abbott's replace-sensor handling.
+    public var shouldNotifyReplaceSensor: Bool {
+        sensorAttention.isReplaceSensor
+    }
+
     /// `true` when `errorData` reports Abbott's `SENSOR_TERMINATED`
-    /// condition. For exhausted Libre 3 sensors this commonly means the
-    /// app has sent the shutdown patch command (`05 00 00 00 00 00 00`),
-    /// after which the sensor stops advertising over BLE.
+    /// condition. This is the post-shutdown/end-session state; the matching
+    /// patch-control shutdown command is `05 00 00 00 00 00 00`.
     ///
     /// Deliberately `false` for `.expired`: end-of-wear state `5` can
-    /// still advertise over BLE until the shutdown command is sent or the
-    /// sensor shuts itself down.
+    /// still advertise over BLE until a later shutdown/end-session transition.
     public var isShutdownTerminated: Bool {
         sensorError.isShutdownTerminated
     }
@@ -48,16 +83,25 @@ public struct PatchStatus: Equatable, Sendable {
         sensorError.isInsertionFailure
     }
 
+    /// Original combined "terminal" check. Stays `true` for both a
+    /// start/insertion failure and a post-shutdown termination, preserving
+    /// its prior union semantics so existing callers do not silently lose the
+    /// terminated signal. Migrate to the split `isInsertionFailure` /
+    /// `isShutdownTerminated` flags, which separate a start failure from a
+    /// normal shutdown.
     @available(
         *,
         deprecated,
-        renamed: "isInsertionFailure",
-        message: "`terminated` is a shutdown state, not a failure. Check `isShutdownTerminated` separately."
+        message: "Split into `isInsertionFailure` and `isShutdownTerminated`: `terminated` is a shutdown state, not a start failure. This property stays true for both to preserve prior behavior."
     )
     public var isTerminalFailure: Bool {
-        isInsertionFailure
+        isInsertionFailure || isShutdownTerminated
     }
 
+    /// Diagnostic disconnect evidence from the patch-status record.
+    ///
+    /// These bytes are kept separate from patch-state and sensor-error terminal
+    /// decoding; non-zero values do not by themselves indicate shutdown.
     public var hasDisconnectReason: Bool {
         stackDisconnectReason != 0 || appDisconnectReason != 0
     }
@@ -124,23 +168,85 @@ public enum PatchStatusError: Error, Equatable {
     case wrongPlaintextSize(Int)
 }
 
+/// Product-facing user action inferred from the patch-status record.
+///
+/// This intentionally sits above `Libre3SensorError`: the app can present a
+/// replacement notification for conditions that are not simply the
+/// post-shutdown `.terminated` state. Current Abbott-app compatibility:
+/// `3 -> checkSensor`, `5/6 -> sensorEnded`, `7/8 -> replaceSensor`.
+/// When `errorData == 0`, patch-state fallback treats state `3` as
+/// check-sensor, states `5`/`6` as sensor-ended, and states `7`/`8` as
+/// replace-sensor.
+public enum Libre3SensorAttention: Equatable, Sendable, CustomStringConvertible {
+    case none
+    case checkSensor
+    case sensorEnded
+    case replaceSensor
+    case unknown(Int16)
+
+    public init(errorData: Int16, patchState: Int8? = nil) {
+        switch errorData {
+        case 0:
+            break
+        case 3:
+            self = .checkSensor
+            return
+        case 5, 6:
+            self = .sensorEnded
+            return
+        case 7, 8:
+            self = .replaceSensor
+            return
+        default:
+            self = .unknown(errorData)
+            return
+        }
+
+        switch patchState {
+        case 3:
+            self = .checkSensor
+        case 7, 8:
+            self = .replaceSensor
+        case 5, 6:
+            self = .sensorEnded
+        default:
+            self = .none
+        }
+    }
+
+    public var shouldNotifyUser: Bool {
+        self != .none
+    }
+
+    public var isReplaceSensor: Bool {
+        self == .replaceSensor
+    }
+
+    public var description: String {
+        switch self {
+        case .none:
+            return "none"
+        case .checkSensor:
+            return "checkSensor"
+        case .sensorEnded:
+            return "sensorEnded"
+        case .replaceSensor:
+            return "replaceSensor"
+        case .unknown(let code):
+            return "unknown(\(code))"
+        }
+    }
+}
+
 /// Sensor error/status code carried in the patch-status / event-log
-/// `errorData` field. Mirrors the codes Abbott's app feeds into
-/// `SensorState.Companion.from(MSLibre3SensorErrorEvent)`:
+/// `errorData` field. Current compatibility mapping:
 /// `3 → insertionFailure`, `5 → expired`, `6 → terminated`,
 /// `7 → transmissionError`, `8 → terminated`; everything else is
-/// `SENSOR_NO_ERROR`.
+/// treated as no error or preserved as unknown.
 ///
-/// IMPORTANT — the numeric `errorData → code` mapping is INFERRED, not
-/// yet confirmed against captured expired/terminated frames. It rests on:
-/// (a) healthy captures consistently showing `errorData == 0`, which
-/// lines up with Abbott's `0 == SENSOR_NO_ERROR` fall-through, and
-/// (b) the patch-status record sharing the exact
-/// `{ lifeCount, errorData, eventData, index }` shape of Abbott's
-/// `ABT_Event_Log`, whose `errorData` is the sensor error field. The
-/// native DPCRL byte→code translation is not present in the decompiled
-/// app, so validate against real expired/terminated captures before
-/// relying on this mapping for anything safety-critical.
+/// Keep code 5 and codes 6/8 separate: expiry can remain BLE-visible, while
+/// terminated is a shutdown/end-session state. Unknown non-zero codes should
+/// be surfaced rather than coerced into a named state.
 public enum Libre3SensorError: Equatable, Sendable, CustomStringConvertible {
     /// No error (code 0) — the healthy steady state.
     case none
@@ -150,9 +256,11 @@ public enum Libre3SensorError: Equatable, Sendable, CustomStringConvertible {
     /// after expiry until shutdown.
     case expired
     /// Sensor terminated / shut down (codes 6 and 8). Exhausted sensors
-    /// commonly reach this after the app sends the shutdown patch command.
+    /// can reach this after the shutdown patch command.
     case terminated
-    /// Transient transmission error (code 7). Not terminal.
+    /// Transmission-error vocabulary (code 7). Abbott's Android app also
+    /// treats this code as a replace-sensor UI condition; use
+    /// `PatchStatus.sensorAttention` for notification routing.
     case transmissionError
     /// Any other non-zero code we don't yet have evidence to name.
     case unknown(Int16)
@@ -213,6 +321,32 @@ public enum Libre3PatchState: Equatable, Sendable, CustomStringConvertible {
         default:
             self = .raw(rawValue)
         }
+    }
+
+    public var rawValue: Int8 {
+        switch self {
+        case .active:
+            return 4
+        case .raw(let value):
+            return value
+        }
+    }
+
+    public var isActive: Bool {
+        rawValue == 4
+    }
+
+    /// States handled as expired/error states by known Libre 3 clients.
+    ///
+    /// These states may be followed by backfill and then an explicit shutdown
+    /// command. They are distinct from the already-terminated states 6 and 8.
+    public var isExpiredOrError: Bool {
+        rawValue == 3 || rawValue == 5 || rawValue == 7
+    }
+
+    /// States handled as already terminated/shut down by known Libre 3 clients.
+    public var isTerminated: Bool {
+        rawValue == 6 || rawValue == 8
     }
 
     public var description: String {

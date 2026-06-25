@@ -12,15 +12,24 @@ import Foundation
 //   [34..98)  X(32) || Y(32)      ← phone STATIC pubkey
 //   [98..162) ECDSA signature     (64B raw r || s)
 //
-// 2026-05-09 live-device correction:
-// `phone_cert_firstpair.bin` (`03 00...`) was rejected before
-// CertificateAccepted by a fresh sensor, while captured `phone_cert_162b.bin`
-// (`03 03...`) passed cert acceptance but still failed before Phase 6 with the
-// index-0/default Phase 5 static scalar. Harness replay with the index-1
-// private blob shows `03 03` needs the native index-1 static scalar window
-// below. A live rerun with that correction still failed
-// before Phase 6, so this scalar selection is necessary evidence, not a
-// complete first-pair source/state fix.
+// Cert family and live first-pair status:
+// The package-bundled `phone_cert_firstpair.bin` (`03 00...`) is rejected by
+// live fresh sensors and is kept only as a default for tests and controlled
+// experiments. Working first-pair uses the `03 03` family cert
+// (`phone_cert_162b.bin`, vendored by the app/plugin bundles, not this
+// package). The `03 03` prefix selects the native index-1 static scalar
+// window below via `phase5StaticScalarWindowOverride`.
+//
+// 2026-06-25 update — supersedes the earlier "still failed before Phase 6"
+// note: fresh-pair now completes through Phase 6 on live sensors and has in
+// production for weeks (LoopKit/LibreLoop's `LibreLoopPairingService`). The
+// missing piece was not the cert alone but coupling the `03 03` cert to a
+// deterministic native ephemeral: derive a keypair plus matching entropy with
+// `SessionKey.makeFirstPairNativeEphemeral(entropySource:)`, pass the keypair
+// as `PairingFlow(phoneEph:)`, and feed the SAME entropy into
+// `runCommandGatedFirstPairHandshake(blePIN:maxEntropyAttempts:1,
+// entropySource:)` so the phone ephemeral and the Phase 5 key source derive
+// from one native entropy. A random ephemeral does not pair.
 
 public struct PhoneCert: Equatable, Sendable {
     public let raw: Data           // full 162B blob
@@ -37,18 +46,20 @@ public struct PhoneCert: Equatable, Sendable {
         self.staticPub = pub
     }
 
-    /// First-pair Phase 5 static-scalar policy inferred from the cert family.
-    /// `03 00` uses the older entry-source-derived scalar; `03 03` uses the
-    /// observed index-1 native scalar window. This does not by itself
-    /// prove that the remaining native first-pair source/state is complete.
+    /// First-pair Phase 5 static-scalar policy keyed on the cert family.
+    /// `03 00` uses the entry-source-derived scalar; `03 03` uses the index-1
+    /// native scalar window, which is the family that pairs live sensors when
+    /// combined with the native-ephemeral Phase 5 derivation (see the cert
+    /// family note above).
     public var phase5StaticScalarWindowOverride: Data? {
         guard raw.prefix(2).elementsEqual([0x03, 0x03]) else { return nil }
         return FirstPairStaticScalarWindow.firstPairIndex1
     }
 
-    /// Loads the bundled `phone_cert_firstpair.bin` candidate. This is kept as
-    /// the default resource for tests and controlled experiments, but live
-    /// fresh-sensor testing has shown it is not universally accepted.
+    /// Loads the package-bundled `phone_cert_firstpair.bin` (`03 00`). This is
+    /// the default resource for tests and controlled experiments only — live
+    /// fresh sensors reject it. For live first-pair, supply the `03 03`
+    /// `phone_cert_162b.bin` (vendored by the app/plugin) instead.
     public static func bundledFirstPair() throws -> PhoneCert {
         try bundled(named: "phone_cert_firstpair")
     }
