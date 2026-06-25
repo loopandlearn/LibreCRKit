@@ -15,7 +15,7 @@ public final class SensorScannerNG: NSObject, @unchecked Sendable {
 
     // MARK: - Events
 
-    public enum Event: @unchecked Sendable {
+    public enum Event {
         case stateChanged(CBManagerState)
         case didDiscover(DiscoveredSensor)
         case didConnect(CBPeripheral)
