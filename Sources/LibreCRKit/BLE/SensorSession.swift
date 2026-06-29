@@ -219,6 +219,11 @@ public final class SensorSession: NSObject, @unchecked Sendable {
                     return
                 }
                 if chr.isNotifying == enabled {
+                    // CoreBluetooth sends no CCCD write when the state already
+                    // matches. Log it so field captures reveal when a "refresh"
+                    // was actually a no-op — e.g. iOS retaining a characteristic's
+                    // CCCD across a reconnect, which leaves the sensor un-rearmed.
+                    BLETiming.log("setNotify: \(uuid.uuidString) already \(enabled ? "on" : "off") — no CCCD write")
                     cont.resume()
                     return
                 }
@@ -267,27 +272,41 @@ public final class SensorSession: NSObject, @unchecked Sendable {
     ///     notifications are now first-time enables, so no settle delay is used.
     public func refreshDataPlaneNotifications(
         characteristics: [CBUUID] = LibreSensorGATT.Char.dataPlaneNotifying,
+        forceReArm: Set<CBUUID> = [LibreSensorGATT.Char.patchControl],
         perCharacteristicTimeout: TimeInterval = 8,
         settleDelay: TimeInterval = 0.09
     ) async throws {
-        // Data-plane characteristics are deliberately NOT subscribed at connect
-        // (discoverAndSubscribe only enables the handshake set), so enabling them
-        // here is a first-time CCCD write — a single enable is what kicks the
-        // sensor into streaming, with no off→on toggle. Run them concurrently so
-        // the acks overlap instead of summing.
+        // Read-only data-plane characteristics aren't subscribed at connect
+        // (discoverAndSubscribe only enables the handshake set), so a single
+        // first-time CCCD enable is what kicks the sensor into streaming.
+        //
+        // The command channel (patchControl) is different: across a reconnect to
+        // the same peripheral iOS retains its CCCD-on state, so a plain
+        // setNotify(true) short-circuits (isNotifying already true) and never
+        // writes the CCCD. The sensor's command channel is then left un-rearmed
+        // and rejects encrypted patchControl writes with "Unknown ATT error"
+        // (observed as 100% backfill-request failure). For `forceReArm` UUIDs do
+        // an explicit off→on so a real CCCD write reaches the sensor regardless of
+        // the cached state. Run all chars concurrently so acks overlap.
         _ = settleDelay
         let start = DispatchTime.now()
-        BLETiming.log("refreshDataPlaneNotifications: \(characteristics.count) char(s), first-time enable")
+        BLETiming.log("refreshDataPlaneNotifications: \(characteristics.count) char(s), \(forceReArm.count) re-armed off→on")
         try await withThrowingTaskGroup(of: Void.self) { group in
             for uuid in characteristics {
+                let rearm = forceReArm.contains(uuid)
                 group.addTask {
+                    if rearm {
+                        // Force a real CCCD write even when iOS reports it as
+                        // already notifying (retained across reconnect).
+                        try await self.setNotify(false, for: uuid, timeout: perCharacteristicTimeout)
+                    }
                     try await self.setNotify(true, for: uuid, timeout: perCharacteristicTimeout)
                 }
             }
             try await group.waitForAll()
         }
         let ms = Int(Double(DispatchTime.now().uptimeNanoseconds &- start.uptimeNanoseconds) / 1_000_000)
-        BLETiming.log("refreshDataPlaneNotifications: complete in \(ms)ms (first-time enable)")
+        BLETiming.log("refreshDataPlaneNotifications: complete in \(ms)ms")
     }
 
     /// Fragments `payload` per BleFraming and writes each fragment with response.
