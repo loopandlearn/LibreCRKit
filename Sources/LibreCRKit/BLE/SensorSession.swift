@@ -47,6 +47,28 @@ public enum SensorSessionError: Error {
     case discoveryFailed(String)
 }
 
+extension SensorSessionError: CustomStringConvertible {
+    /// Semantic description with associated values, so logs read
+    /// "disconnected — link dropped: …" instead of the opaque NSError-bridged
+    /// "SensorSessionError error 4" (the bare case ordinal).
+    public var description: String {
+        switch self {
+        case .missingCharacteristic(let uuid):
+            return "missingCharacteristic(\(uuid.uuidString)) — expected characteristic absent after discovery (stale handle; reconnect)"
+        case .notifyFailed(let uuid, let enabled, let detail):
+            return "notifyFailed(\(uuid.uuidString), enable=\(enabled)) — \(detail)"
+        case .readFailed(let uuid, let detail):
+            return "readFailed(\(uuid.uuidString)) — \(detail)"
+        case .writeFailed(let uuid, let detail):
+            return "writeFailed(\(uuid.uuidString)) — \(detail)"
+        case .disconnected(let detail):
+            return "disconnected — link dropped\(detail.map { ": \($0)" } ?? "")"
+        case .discoveryFailed(let detail):
+            return "discoveryFailed — \(detail)"
+        }
+    }
+}
+
 /// Formats a CoreBluetooth error with its raw domain + ATT/CB code. The
 /// peripheral-returned "Unknown ATT error" string hides the code that tells
 /// us *why* a write was rejected: ATT 0x01/0x0e = invalid/stale handle (needs
@@ -260,6 +282,11 @@ public final class SensorSession: NSObject, @unchecked Sendable {
                 self.pendingNotifyChanges[uuid, default: []].append(
                     PendingNotifyChange(enabled: enabled, box: box)
                 )
+                // Log the real CCCD write so field captures show when each enable is
+                // issued vs when its didUpdateNotificationStateFor ack lands — the
+                // sensor serializes acks (~1.5s each), so with many chars armed the
+                // trailing ones race the per-char timeout.
+                BLETiming.log("setNotify: \(uuid.uuidString) writing setNotifyValue(\(enabled)) — awaiting ack (timeout \(Int(timeout))s)")
                 DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeout) { [weak self, box] in
                     guard box.resume(
                         throwing: SensorSessionError.notifyFailed(
@@ -301,7 +328,15 @@ public final class SensorSession: NSObject, @unchecked Sendable {
     public func refreshDataPlaneNotifications(
         characteristics: [CBUUID] = LibreSensorGATT.Char.dataPlaneNotifying,
         forceReArm: Set<CBUUID> = Set(LibreSensorGATT.Char.dataPlaneNotifying),
-        perCharacteristicTimeout: TimeInterval = 8,
+        // The sensor acknowledges CCCD writes serially (~1.56s each), so with the
+        // full data-plane set armed concurrently the trailing char's ack lands
+        // ~count·1.56s out. With 7 chars the 7th ack lands ~8.85s after the writes,
+        // so an 8s per-char timeout failed the whole refresh (field logs 2026-07-23:
+        // 6 acks in, the 7th missed the 8s deadline by ~0.85s). 15s clears the
+        // serial-ack tail with margin (confirmed: 7th ack at 8.85s, refresh
+        // complete in 7.9s). A count-scaled bound — e.g. max(8, count·2) — would
+        // stay robust if the arm set grows.
+        perCharacteristicTimeout: TimeInterval = 15,
         settleDelay: TimeInterval = 0.09
     ) async throws {
         // Post-Phase-6 the sensor won't start broadcasting until each data-plane
@@ -339,6 +374,7 @@ public final class SensorSession: NSObject, @unchecked Sendable {
         let ms = Int(Double(DispatchTime.now().uptimeNanoseconds &- start.uptimeNanoseconds) / 1_000_000)
         BLETiming.log("refreshDataPlaneNotifications: complete in \(ms)ms")
     }
+
 
     /// Fragments `payload` per BleFraming and writes each fragment with response.
     /// Resolves when all fragments have been ACKed by the peripheral.
