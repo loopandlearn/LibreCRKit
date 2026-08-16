@@ -3134,16 +3134,18 @@ public enum FirstPairSourceSlice {
             var bd0State = initBD0
 
             for shift in [24, 16, 8, 0] {
-                let cf0Source = [UInt8](repeating: 0, count: 3)
-                    + [0x05]
-                    + Array(cf0State[0..<8])
-                    + Array(cf0State[8..<12])
-                    + Array(cf0State[12..<14])
-                let bd0Source = [UInt8](repeating: 0, count: 3)
-                    + [0x03]
-                    + Array(bd0State[0..<8])
-                    + Array(bd0State[8..<12])
-                    + Array(bd0State[12..<14])
+                // Built by append rather than chained `+`: the operator chain
+                // blows the type-checker budget in this file's overload scope.
+                var cf0Source = [UInt8](repeating: 0, count: 3)
+                cf0Source.append(0x05)
+                cf0Source.append(contentsOf: cf0State[0..<8])
+                cf0Source.append(contentsOf: cf0State[8..<12])
+                cf0Source.append(contentsOf: cf0State[12..<14])
+                var bd0Source = [UInt8](repeating: 0, count: 3)
+                bd0Source.append(0x03)
+                bd0Source.append(contentsOf: bd0State[0..<8])
+                bd0Source.append(contentsOf: bd0State[8..<12])
+                bd0Source.append(contentsOf: bd0State[12..<14])
                 let cf0 = try vm638840(
                     magic: builder633fa8NullPostInitCF0Magic,
                     src1: cf0Source,
